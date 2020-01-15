@@ -215,23 +215,6 @@ namespace Microsoft.Health.Fhir.Core.Features.Operations.Export
             }
         }
 
-        private async Task GetAccessTokenAndConnect(Uri resourceUri, CancellationToken cancellationToken)
-        {
-            var accessToken = _accessTokenProvider.GetAccessTokenForResource(resourceUri);
-            _logger.LogInformation($"Access token got from provider: {accessToken}");
-
-            _exportDestinationClient = _exportDestinationClientFactory.Create("azure-block-blob");
-
-            try
-            {
-                await _exportDestinationClient.ConnectAsync(accessToken, cancellationToken, _exportJobRecord.Id);
-            }
-            catch (DestinationConnectionException dce)
-            {
-                _logger.LogWarning(dce, "Failed to connect to export destination client");
-            }
-        }
-
         // Get destination info from secret store, create appropriate export client and connect to destination.
         private async Task GetDestinationInfoAndConnectAsync(CancellationToken cancellationToken)
         {

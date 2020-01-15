@@ -79,6 +79,8 @@ namespace Microsoft.Health.Fhir.Core.Features.Operations.Export
                     uriBuilder.Query = queryParameters.ToString();
 
                     jobRecord = new ExportJobRecord(uriBuilder.Uri, request.ResourceType, hash, requestorClaims);
+
+                    // Store the destination secret.
                     try
                     {
                         await _secretStore.SetSecretAsync(jobRecord.SecretName, request.DestinationInfo.ToJson(), cancellationToken);
