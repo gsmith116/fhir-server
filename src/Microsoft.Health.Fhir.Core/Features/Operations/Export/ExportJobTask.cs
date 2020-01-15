@@ -235,9 +235,32 @@ namespace Microsoft.Health.Fhir.Core.Features.Operations.Export
         // Get destination info from secret store, create appropriate export client and connect to destination.
         private async Task GetDestinationInfoAndConnectAsync(CancellationToken cancellationToken)
         {
-            if (_exportJobRecord.StorageAccountUri != null)
+            if (_exportJobRecord.UseConfig)
             {
-                await GetAccessTokenAndConnect(new Uri(_exportJobConfiguration.DefaultStorageAccountConnection), cancellationToken);
+                // await GetAccessTokenAndConnect(new Uri(_exportJobConfiguration.DefaultStorageAccountConnection), cancellationToken);
+                if (!_exportDestinationClientFactory.IsSupportedDestinationType(_exportJobConfiguration.DefaultStorageAccountType))
+                {
+                    throw new DestinationConnectionException(string.Format(Resources.UnsupportedDestinationTypeMessage, _exportJobConfiguration.DefaultStorageAccountType), HttpStatusCode.BadRequest);
+                }
+
+                _exportDestinationClient = _exportDestinationClientFactory.Create(_exportJobConfiguration.DefaultStorageAccountType);
+
+                // Check whether the config contains a uri to a storage account or a connection string.
+                if (Uri.TryCreate(_exportJobConfiguration.DefaultStorageAccountConnection, UriKind.RelativeOrAbsolute, out Uri resultUri))
+                {
+                    // We need to get the corresponding access token.
+                    string accessToken = _accessTokenProvider.GetAccessTokenForResource(resultUri);
+                    if (string.IsNullOrWhiteSpace(accessToken))
+                    {
+                        throw new DestinationConnectionException(Resources.CannotGetAccessToken, HttpStatusCode.Unauthorized);
+                    }
+
+                    await _exportDestinationClient.ConnectWithAccessTokenAsync(accessToken, cancellationToken, _exportJobRecord.Id);
+                }
+                else
+                {
+                    await _exportDestinationClient.ConnectAsync(_exportJobConfiguration.DefaultStorageAccountConnection, cancellationToken, _exportJobRecord.Id);
+                }
             }
             else
             {
