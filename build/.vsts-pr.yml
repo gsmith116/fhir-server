@@ -18,3 +18,14 @@ jobs:
   - template: build.yml
     parameters:
       packageArtifacts: false
+
+- job: Docker
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - task: Docker@2
+    displayName: Build FHIR Server Image
+    inputs:
+      repository: fhirserverdocker
+      command: build
+      Dockerfile: samples/docker/Dockerfile
